@@ -332,12 +332,11 @@ ruby scan_metafields.rb --help             # show help
 
 ## 9. Author
 
-Made by [Karim Tarek](https://ca.linkedin.com/in/karimtarek). I'm a Shopify developer based in Canada, building tools and apps around the Shopify ecosystem through.
-
-I also built [FieldsRaven](https://apps.shopify.com/fieldsraven) — a Shopify app that exposes the Metafields API on the storefront through an app proxy, so theme developers can create and update metafields on-the-fly using Liquid and JS. It's useful for things like wishlists, customer preferences, registration forms, and other storefront features that need to write data back to metafields. Docs are at [docs.fieldsraven.app](https://docs.fieldsraven.app).
+Shopify dev, app builder, metafield enthusiast. Creator of [FieldsRaven](https://apps.shopify.com/fieldsraven). Based in Canada.
 
 - [GitHub](https://github.com/karimmtarek)
 - [LinkedIn](https://ca.linkedin.com/in/karimtarek)
+- [FieldsRaven docs](https://docs.fieldsraven.app)
 - [☕ Buy me a coffee on Ko-fi](https://ko-fi.com/karimtarek)
 
 ---
