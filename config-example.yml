@@ -1,0 +1,237 @@
+# ============================================================
+# Shopify Metafield Scanner — Configuration
+# ============================================================
+# 
+# SETUP INSTRUCTIONS:
+# 1. Go to https://dev.shopify.com and sign in
+# 2. Create an app (e.g., "Metafield Scanner")
+# 3. Under Configuration, set Admin API access scopes (see below)
+# 4. Create an app version, then install the app on your store
+# 5. Copy Client ID and Client Secret from Settings → Client credentials
+# 6. Fill in the store section below
+# 7. Run: ruby scan_metafields.rb
+#
+# REQUIRED API SCOPES (select all that apply to your scan):
+#   - read_products          (for products, variants, collections)
+#   - read_customers         (for customers, companies/B2B)
+#   - read_orders            (for orders)
+#   - read_draft_orders      (for draft orders)
+#   - read_content           (for articles, blogs, pages)
+#   - read_metaobject_definitions (for metaobjects)
+#   - read_locales           (for shop-level metafields)
+#   - read_locations         (for locations)
+# ============================================================
+
+# ----------------------------------------------------------
+# Store Credentials
+# ----------------------------------------------------------
+# Option A: Single store — use "store"
+#
+# store:
+#   domain: "my-store.myshopify.com"
+#   client_id: "your-client-id"
+#   client_secret: "shpss_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+#   api_version: "2026-01"
+#
+# Option B: Multiple stores — use "stores" (a list)
+#
+# stores:
+#   - domain: "store-one.myshopify.com"
+#     client_id: "aaaaaaaaaa"
+#     client_secret: "shpss_aaaaaaaaaa"
+#     api_version: "2026-01"
+#
+#   - domain: "store-two.myshopify.com"
+#     client_id: "bbbbbbbbbb"
+#     client_secret: "shpss_bbbbbbbbbb"
+#     api_version: "2026-01"
+#
+# When using multiple stores:
+#   - Each store's CSV is prefixed with its domain name
+#   - Results are never mixed between stores
+#   - The scan runs sequentially (store 1 finishes, then store 2, etc.)
+#   - All other settings (resources, filters, thresholds) apply to all stores
+#
+# How to get your credentials:
+#   1. Go to https://dev.shopify.com → create an app
+#   2. Configure Admin API scopes (see below)
+#   3. Install the app on your store
+#   4. Copy the Client ID and Client Secret from Settings
+# ----------------------------------------------------------
+store:
+  # Your myshopify.com domain (without https://)
+  # Example: my-cool-store.myshopify.com
+  domain: "your-store.myshopify.com"
+
+  # Client ID from the Dev Dashboard (Settings → Client credentials)
+  client_id: "your-client-id"
+
+  # Client Secret from the Dev Dashboard (starts with "shpss_")
+  client_secret: "shpss_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+  # API version — use a stable release
+  # See: https://shopify.dev/docs/api/usage/versioning
+  api_version: "2026-01"
+
+# ----------------------------------------------------------
+# Resources to Scan
+# ----------------------------------------------------------
+# Enable/disable which resource types to scan for metafields.
+# Each resource maps to a Shopify GraphQL owner type.
+#
+# Set to true/false to include/exclude from the scan.
+# ----------------------------------------------------------
+resources:
+  product:          true
+  product_variant:  true
+  collection:       true
+  customer:         true
+  order:            false    # ⚠ Can be very large — enable with caution
+  draft_order:      false
+  page:             true
+  article:          true
+  blog:             true
+  shop:             true     # Store-level metafields
+  company:          false    # B2B — only if using Shopify B2B
+  company_location: false    # B2B locations
+  location:         false    # Physical locations
+
+# ----------------------------------------------------------
+# Filters (optional)
+# ----------------------------------------------------------
+# Narrow the scan to specific namespaces or keys.
+# Leave empty [] to scan everything.
+# ----------------------------------------------------------
+filters:
+  # Only scan these namespaces (leave empty for all)
+  # Example: ["custom", "my_app", "shopify"]
+  namespaces: []
+
+  # Exclude these namespaces from results
+  # Example: ["shopify--discovery", "shopify"]
+  exclude_namespaces: []
+
+  # Only scan specific metafield keys (format: "namespace.key")
+  # Example: ["custom.ingredients", "my_app.config"]
+  specific_keys: []
+
+  # Minimum total size (bytes) to include in report
+  # Useful to filter out tiny metafields — set to 0 for everything
+  min_total_bytes: 0
+
+# ----------------------------------------------------------
+# Scan Method
+# ----------------------------------------------------------
+# "bulk"   — Uses Shopify Bulk Operations API (recommended for large stores)
+#            Async, no throttling, handles any store size
+#            Requires: write access is NOT needed, just read scopes
+#
+# "graphql" — Uses paginated GraphQL queries
+#            Faster for small stores (< 1000 resources)
+#            Subject to API rate limits
+# ----------------------------------------------------------
+scan:
+  method: "bulk"          # "bulk" or "graphql"
+
+  # For "graphql" method only:
+  page_size: 50           # Resources per page (max 250)
+  metafields_per_page: 50 # Metafields per resource per page
+
+  # For "bulk" method only:
+  poll_interval: 3        # Seconds between status checks
+  max_wait_time: 600      # Max seconds to wait for bulk op (10 min)
+
+# ----------------------------------------------------------
+# Output Settings
+# ----------------------------------------------------------
+output:
+  # Output directory (relative to script location)
+  directory: "./results"
+
+  # Filename template — available tokens:
+  #   {store}     — store domain (sanitized)
+  #   {date}      — scan date (YYYY-MM-DD)
+  #   {timestamp} — full timestamp (YYYYMMDD_HHMMSS)
+  filename: "{store}_metafields_{timestamp}.csv"
+
+  # Split output into separate CSV files per resource type?
+  # false — one combined CSV with all resources (default)
+  # true  — one CSV per resource (e.g., product.csv, collection.csv)
+  #         files are named: {store}_metafields_{resource}_{timestamp}.csv
+  split_by_resource: false
+
+  # CSV columns to include in output
+  # Available: resource_type, namespace, key, metafield_type,
+  #            count, total_bytes, avg_bytes, max_bytes, min_bytes,
+  #            owner_id, owner_name, value_preview
+  #
+  # "summary" — One row per namespace/key combo with aggregates
+  # "detailed" — One row per individual metafield value
+  report_type: "summary"  # "summary" or "detailed"
+
+  # For "detailed" report: include a preview of the value?
+  include_value_preview: true
+  value_preview_length: 100  # Max characters for preview
+
+  # Include a totals row at the bottom?
+  include_totals: true
+
+  # Sort results by (column_name + asc/desc)
+  sort_by: "total_bytes"
+  sort_order: "desc"
+
+# ----------------------------------------------------------
+# Size Thresholds & Alerts
+# ----------------------------------------------------------
+# Flag metafields approaching Shopify limits.
+# These appear as warning columns in the CSV output.
+# ----------------------------------------------------------
+thresholds:
+  # Shopify metafield size limits effective API 2026-04:
+  #   - JSON metafields: 128 KB (existing apps grandfathered at 2 MB)
+  #   - All other types: 16 KB
+  # Values exceeding these limits become read-only until updated.
+  limits:
+    single_line_text_field: 16384       # 16 KB
+    multi_line_text_field:  16384       # 16 KB
+    rich_text_field:        16384       # 16 KB
+    json:                   131072      # 128 KB
+    list_single_line_text:  16384       # 16 KB
+    list_metaobject_reference: 16384    # 16 KB
+    # All other types default to:
+    default:                16384       # 16 KB
+
+  # Warn when a metafield value exceeds this % of its type limit
+  warning_percent: 90
+
+  # Flag in output when individual value exceeds this byte size
+  flag_above_bytes: 14745  # ~90% of 16 KB
+
+# ----------------------------------------------------------
+# Progress Display
+# ----------------------------------------------------------
+# Controls what you see in the terminal while scanning.
+# ----------------------------------------------------------
+progress:
+  # "spinner"  — Built-in animated spinner (no gems needed)
+  #              Shows: ⠋ Scanning products... 1,247 metafields found
+  #
+  # "bar"      — Fancy progress bar with ETA (requires: gem install tty-progressbar)
+  #              Shows: [████████░░░░░░░░] 52% | 1,247/2,400 metafields | ETA: 0:32
+  #
+  # "none"     — No animation, just log lines
+  #              Good for piping output to a file or CI environments
+  style: "spinner"
+
+# ----------------------------------------------------------
+# Logging
+# ----------------------------------------------------------
+logging:
+  # "quiet"   — errors only
+  # "normal"  — progress + summary
+  # "verbose" — full debug output
+  level: "normal"
+
+  # Write logs to file? (in output directory)
+  log_to_file: false
+  log_filename: "{store}_scan_{timestamp}.log"
